@@ -1,7 +1,6 @@
 from tkinter import Y
 from pizzapy import Customer, StoreLocator, Order, ConsoleInput, CreditCard
 
-#customer = Customer("Mark", "Triassi", "markjtriassi@gmail.com", "9259890841","406 Eucalyptus Drive, Redlands, CA, 92373" )
 #customer = ConsoleInput.get_new_customer()
 customer = ConsoleInput.get_customer()
 
