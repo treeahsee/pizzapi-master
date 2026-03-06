@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pizza Order</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #111; font-family: 'Inter', sans-serif; }
+    .step { display: none; }
+    .step.active { display: block; }
+    .card { background: #1c1c1e; border: 1px solid #2a2a2a; border-radius: 12px; }
+    input, select {
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      color: #f0f0f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus { border-color: #e03e2d; }
+    .btn-primary {
+      background: #e03e2d;
+      color: white;
+      border-radius: 8px;
+      padding: 10px 24px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      border: none;
+    }
+    .btn-primary:hover { background: #c0321f; }
+    .btn-primary:disabled { background: #555; cursor: not-allowed; }
+    .btn-ghost {
+      background: transparent;
+      color: #aaa;
+      border: 1px solid #3a3a3a;
+      border-radius: 8px;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-ghost:hover { border-color: #e03e2d; color: #e03e2d; }
+    .menu-item {
+      background: #222;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: border-color 0.2s;
+    }
+    .menu-item:hover { border-color: #e03e2d; }
+    .badge {
+      background: #e03e2d22;
+      color: #e03e2d;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .loader {
+      border: 3px solid #333;
+      border-top: 3px solid #e03e2d;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1c1c1e;
+      border: 1px solid #3a3a3a;
+      color: #f0f0f0;
+      border-radius: 10px;
+      padding: 14px 20px;
+      z-index: 1000;
+      font-size: 14px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      max-width: 320px;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { border-color: #22c55e; }
+    .toast.error { border-color: #e03e2d; }
+    .step-indicator span {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      border: 2px solid #3a3a3a; color: #666;
+      transition: all 0.3s;
+    }
+    .step-indicator span.done { background: #e03e2d; border-color: #e03e2d; color: white; }
+    .step-indicator span.active { border-color: #e03e2d; color: #e03e2d; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #111; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    label { font-size: 13px; color: #888; font-weight: 500; margin-bottom: 4px; display: block; }
+  </style>
+</head>
+<body class="min-h-screen text-gray-100">
+
+  <!-- Header -->
+  <header class="border-b border-gray-800 px-6 py-4 flex items-center gap-3">
+    <svg class="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+    </svg>
+    <span class="text-xl font-bold tracking-tight">PizzaOrder <span class="text-red-500">.</span></span>
+    <div class="ml-auto step-indicator flex items-center gap-2" id="stepIndicator">
+      <span id="si1" class="active">1</span>
+      <div class="w-6 h-px bg-gray-700"></div>
+      <span id="si2">2</span>
+      <div class="w-6 h-px bg-gray-700"></div>
+      <span id="si3">3</span>
+      <div class="w-6 h-px bg-gray-700"></div>
+      <span id="si4">4</span>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-8">
+
+    <!-- STEP 1: Customer Info -->
+    <div class="step active" id="step1">
+      <div class="card p-6">
+        <h2 class="text-2xl font-bold mb-1">Your Info</h2>
+        <p class="text-gray-500 text-sm mb-6">Enter your details to find the nearest Domino's</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label>First Name</label>
+            <input type="text" id="fname" placeholder="John" />
+          </div>
+          <div>
+            <label>Last Name</label>
+            <input type="text" id="lname" placeholder="Doe" />
+          </div>
+          <div>
+            <label>Email</label>
+            <input type="email" id="email" placeholder="john@example.com" />
+          </div>
+          <div>
+            <label>Phone</label>
+            <input type="tel" id="phone" placeholder="5551234567" />
+          </div>
+          <div class="col-span-2">
+            <label>Delivery Address</label>
+            <input type="text" id="address" placeholder="123 Main St, Springfield, IL, 62701" />
+            <p class="text-xs text-gray-600 mt-1">Format: Street, City, State, ZIP</p>
+          </div>
+        </div>
+        <div class="mt-6 flex items-center gap-3">
+          <button class="btn-primary" onclick="findStore()">Find Nearest Store</button>
+          <div id="step1Loader" style="display:none"><div class="loader"></div></div>
+          <span id="step1Error" class="text-red-400 text-sm"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Store Found -->
+    <div class="step" id="step2">
+      <div class="card p-6 mb-4">
+        <div class="flex items-start justify-between">
+          <div>
+            <h2 class="text-2xl font-bold mb-1">Your Store</h2>
+            <p class="text-gray-500 text-sm mb-4">Closest open Domino's found</p>
+          </div>
+          <button class="btn-ghost text-sm" onclick="goToStep(1)">Change Address</button>
+        </div>
+        <div class="bg-black bg-opacity-40 rounded-xl p-5 flex gap-4 items-center">
+          <div class="w-12 h-12 rounded-full bg-red-500 bg-opacity-20 flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="font-semibold" id="storeAddress">Loading...</div>
+            <div class="text-sm text-gray-500 mt-1">Store #<span id="storeId">-</span> &bull; <span id="storeOpen" class="text-green-400">Open Now</span></div>
+          </div>
+        </div>
+        <div class="mt-5">
+          <button class="btn-primary w-full" onclick="goToMenuStep()">Browse Menu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Menu -->
+    <div class="step" id="step3">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-2xl font-bold">Menu</h2>
+          <p class="text-gray-500 text-sm">Search and add items to your order</p>
+        </div>
+        <button class="btn-ghost text-sm" onclick="goToStep(2)">Back</button>
+      </div>
+
+      <!-- Search -->
+      <div class="relative mb-4">
+        <input type="text" id="menuSearch" placeholder="Search for a pizza, pasta, sides..." oninput="debounceSearch()" />
+        <div id="menuLoader" style="display:none" class="absolute right-3 top-3"><div class="loader" style="width:20px;height:20px;border-width:2px"></div></div>
+      </div>
+
+      <!-- Results -->
+      <div id="menuResults" class="space-y-2 mb-6" style="max-height: 420px; overflow-y: auto;"></div>
+
+      <!-- Cart summary bar -->
+      <div class="card p-4 flex items-center justify-between sticky bottom-4">
+        <div class="text-sm">
+          <span id="cartCount" class="font-bold text-red-500">0</span> items &bull;
+          <span class="text-gray-400">$<span id="cartTotal">0.00</span></span>
+        </div>
+        <button class="btn-primary" onclick="goToCheckout()" id="checkoutBtn" disabled>Review Order</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Cart + Checkout -->
+    <div class="step" id="step4">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-2xl font-bold">Your Order</h2>
+          <p class="text-gray-500 text-sm">Review and pay</p>
+        </div>
+        <button class="btn-ghost text-sm" onclick="goToStep(3)">Back to Menu</button>
+      </div>
+
+      <!-- Cart items -->
+      <div class="card p-4 mb-4">
+        <h3 class="font-semibold text-gray-300 mb-3 text-sm uppercase tracking-wider">Items</h3>
+        <div id="cartItems" class="space-y-2"></div>
+        <div class="border-t border-gray-700 mt-4 pt-4 flex justify-between">
+          <span class="text-gray-400">Subtotal</span>
+          <span class="font-bold">$<span id="checkoutTotal">0.00</span></span>
+        </div>
+        <p class="text-xs text-gray-600 mt-1">+ tax & fees calculated at checkout</p>
+      </div>
+
+      <!-- Payment -->
+      <div class="card p-6 mb-4">
+        <h3 class="font-semibold mb-4">Payment</h3>
+        <div class="flex gap-3 mb-4">
+          <button class="btn-ghost flex-1 text-sm" id="payCardBtn" onclick="setPayMethod('card')">Credit Card</button>
+          <button class="btn-ghost flex-1 text-sm" id="payCashBtn" onclick="setPayMethod('cash')">Cash on Delivery</button>
+        </div>
+        <div id="cardFields" class="grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label>Card Number</label>
+            <input type="text" id="cardNumber" placeholder="4111 1111 1111 1111" maxlength="19" oninput="formatCard(this)" />
+          </div>
+          <div>
+            <label>Expiry (MM/YY)</label>
+            <input type="text" id="cardExpiry" placeholder="12/26" maxlength="5" oninput="formatExpiry(this)" />
+          </div>
+          <div>
+            <label>CVV</label>
+            <input type="text" id="cardCVV" placeholder="123" maxlength="4" />
+          </div>
+          <div class="col-span-2">
+            <label>Billing ZIP</label>
+            <input type="text" id="cardZip" placeholder="12345" maxlength="5" />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button class="btn-primary flex-1" onclick="validateOrder()" id="validateBtn">Validate Order (Test)</button>
+        <div id="checkoutLoader" style="display:none"><div class="loader"></div></div>
+      </div>
+      <p class="text-xs text-gray-600 mt-2 text-center">Validate checks your order with Domino's API without actually placing it.</p>
+
+      <!-- Result -->
+      <div id="orderResult" class="card p-5 mt-4" style="display:none">
+        <div id="orderResultContent"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let currentStep = 1;
+    let payMethod = 'card';
+    let searchTimeout = null;
+
+    function goToStep(n) {
+      document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+      document.getElementById('step' + n).classList.add('active');
+      currentStep = n;
+      updateStepIndicator(n);
+      window.scrollTo(0, 0);
+    }
+
+    function updateStepIndicator(n) {
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('si' + i);
+        el.classList.remove('active', 'done');
+        if (i < n) el.classList.add('done');
+        else if (i === n) el.classList.add('active');
+      }
+    }
+
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    async function findStore() {
+      const btn = document.querySelector('#step1 .btn-primary');
+      const loader = document.getElementById('step1Loader');
+      const errEl = document.getElementById('step1Error');
+      errEl.textContent = '';
+      btn.disabled = true;
+      loader.style.display = 'inline-block';
+
+      const payload = {
+        first_name: document.getElementById('fname').value.trim(),
+        last_name: document.getElementById('lname').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        address: document.getElementById('address').value.trim(),
+      };
+
+      try {
+        const res = await fetch('/api/find-store', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('storeAddress').textContent = data.store.address;
+          document.getElementById('storeId').textContent = data.store.id;
+          const openEl = document.getElementById('storeOpen');
+          openEl.textContent = data.store.is_open ? 'Open Now' : 'Closed';
+          openEl.className = data.store.is_open ? 'text-green-400' : 'text-red-400';
+          goToStep(2);
+          showToast('Store found!', 'success');
+        } else {
+          errEl.textContent = data.error || 'Failed to find store.';
+        }
+      } catch (e) {
+        errEl.textContent = 'Network error. Is the server running?';
+      } finally {
+        btn.disabled = false;
+        loader.style.display = 'none';
+      }
+    }
+
+    function goToMenuStep() {
+      goToStep(3);
+      searchMenu('');
+    }
+
+    function debounceSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        searchMenu(document.getElementById('menuSearch').value);
+      }, 400);
+    }
+
+    async function searchMenu(query) {
+      const loader = document.getElementById('menuLoader');
+      const results = document.getElementById('menuResults');
+      loader.style.display = 'block';
+
+      try {
+        const res = await fetch('/api/search-menu', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({query}),
+        });
+        const data = await res.json();
+        if (data.success) {
+          renderMenuItems(data.items);
+        } else {
+          results.innerHTML = `<p class="text-red-400 text-sm">${data.error}</p>`;
+        }
+      } catch (e) {
+        results.innerHTML = `<p class="text-red-400 text-sm">Failed to load menu.</p>`;
+      } finally {
+        loader.style.display = 'none';
+      }
+    }
+
+    function renderMenuItems(items) {
+      const results = document.getElementById('menuResults');
+      if (!items.length) {
+        results.innerHTML = `<p class="text-gray-500 text-sm text-center py-8">No items found.</p>`;
+        return;
+      }
+      results.innerHTML = items.map((item, i) => `
+        <div class="menu-item">
+          <div class="flex-1 min-w-0">
+            <div class="font-medium text-sm truncate">${item.name}</div>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="badge">${item.code}</span>
+              ${item.size ? `<span class="text-xs text-gray-500">${item.size}</span>` : ''}
+            </div>
+          </div>
+          <div class="flex items-center gap-3 ml-4">
+            <span class="text-green-400 font-semibold text-sm">$${item.price}</span>
+            <button onclick="addToCart(${JSON.stringify(item).replace(/"/g, '&quot;')})"
+              class="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white font-bold text-lg transition-colors">
+              +
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function addToCart(item) {
+      const res = await fetch('/api/cart/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(item),
+      });
+      const data = await res.json();
+      if (data.success) {
+        updateCartBar(data.cart, data.total);
+        showToast(`Added: ${item.name}`, 'success');
+      }
+    }
+
+    function updateCartBar(cart, total) {
+      document.getElementById('cartCount').textContent = cart.length;
+      document.getElementById('cartTotal').textContent = total.toFixed(2);
+      document.getElementById('checkoutBtn').disabled = cart.length === 0;
+    }
+
+    async function goToCheckout() {
+      const res = await fetch('/api/cart');
+      const data = await res.json();
+      if (data.success) {
+        renderCart(data.cart, data.total);
+        goToStep(4);
+      }
+    }
+
+    function renderCart(cart, total) {
+      const el = document.getElementById('cartItems');
+      el.innerHTML = cart.map((item, i) => `
+        <div class="flex items-center justify-between py-2 border-b border-gray-800">
+          <div class="flex-1">
+            <div class="text-sm font-medium">${item.name}</div>
+            <div class="text-xs text-gray-500">${item.code}</div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-green-400 text-sm">$${item.price}</span>
+            <button onclick="removeFromCart(${i})" class="text-gray-600 hover:text-red-400 transition-colors text-lg leading-none">&times;</button>
+          </div>
+        </div>
+      `).join('') || '<p class="text-gray-500 text-sm">No items yet.</p>';
+      document.getElementById('checkoutTotal').textContent = total.toFixed(2);
+    }
+
+    async function removeFromCart(idx) {
+      const res = await fetch('/api/cart/remove', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({index: idx}),
+      });
+      const data = await res.json();
+      if (data.success) {
+        renderCart(data.cart, data.total);
+        updateCartBar(data.cart, data.total);
+      }
+    }
+
+    function setPayMethod(method) {
+      payMethod = method;
+      document.getElementById('cardFields').style.display = method === 'card' ? 'grid' : 'none';
+      document.getElementById('payCardBtn').style.borderColor = method === 'card' ? '#e03e2d' : '';
+      document.getElementById('payCardBtn').style.color = method === 'card' ? '#e03e2d' : '';
+      document.getElementById('payCashBtn').style.borderColor = method === 'cash' ? '#e03e2d' : '';
+      document.getElementById('payCashBtn').style.color = method === 'cash' ? '#e03e2d' : '';
+    }
+
+    async function validateOrder() {
+      const btn = document.getElementById('validateBtn');
+      const loader = document.getElementById('checkoutLoader');
+      const resultEl = document.getElementById('orderResult');
+      resultEl.style.display = 'none';
+      btn.disabled = true;
+      loader.style.display = 'inline-block';
+
+      const payload = {};
+      if (payMethod === 'card') {
+        payload.card = {
+          number: document.getElementById('cardNumber').value.replace(/\s/g, ''),
+          expiry: document.getElementById('cardExpiry').value,
+          cvv: document.getElementById('cardCVV').value,
+          zip: document.getElementById('cardZip').value,
+        };
+      }
+
+      try {
+        const res = await fetch('/api/validate-order', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        resultEl.style.display = 'block';
+
+        if (data.success) {
+          document.getElementById('orderResultContent').innerHTML = `
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-8 h-8 rounded-full bg-green-500 bg-opacity-20 flex items-center justify-center">
+                <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+              </div>
+              <span class="font-semibold text-green-400">Order Validated</span>
+            </div>
+            <p class="text-sm text-gray-400 mb-2">${data.message}</p>
+            ${data.total ? `<p class="text-sm">Estimated total: <span class="text-green-400 font-bold">$${data.total}</span></p>` : ''}
+            ${data.failed_items && data.failed_items.length ? `<p class="text-xs text-yellow-500 mt-2">Could not add codes: ${data.failed_items.join(', ')}</p>` : ''}
+          `;
+          showToast('Order validated successfully!', 'success');
+        } else {
+          document.getElementById('orderResultContent').innerHTML = `
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-8 h-8 rounded-full bg-red-500 bg-opacity-20 flex items-center justify-center">
+                <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </div>
+              <span class="font-semibold text-red-400">Validation Failed</span>
+            </div>
+            <p class="text-sm text-gray-400">${data.error}</p>
+          `;
+          showToast('Validation failed', 'error');
+        }
+      } catch (e) {
+        document.getElementById('orderResultContent').innerHTML = `<p class="text-red-400 text-sm">Network error.</p>`;
+      } finally {
+        btn.disabled = false;
+        loader.style.display = 'none';
+      }
+    }
+
+    function formatCard(el) {
+      let v = el.value.replace(/\D/g, '').slice(0, 16);
+      el.value = v.replace(/(.{4})/g, '$1 ').trim();
+    }
+
+    function formatExpiry(el) {
+      let v = el.value.replace(/\D/g, '').slice(0, 4);
+      if (v.length >= 3) v = v.slice(0, 2) + '/' + v.slice(2);
+      el.value = v;
+    }
+
+    // Enter key support
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && currentStep === 1) findStore();
+    });
+
+    // Init
+    setPayMethod('card');
+  </script>
+</body>
+</html>
